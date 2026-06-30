@@ -17,6 +17,10 @@ let prisma: PrismaClient | null = null;
 
 function getPrisma() {
   if (!prisma) {
+    const dbUrl = process.env["DATABASE_URL"];
+    if (!dbUrl) {
+      console.warn('DATABASE_URL is not set. Prisma will fail.');
+    }
     prisma = new PrismaClient();
   }
   return prisma;
@@ -24,6 +28,14 @@ function getPrisma() {
 
 const app = express();
 app.use(cors());
+
+// Request logging for debugging
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    console.log(`[API Request] ${req.method} ${req.path}`);
+  }
+  next();
+});
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -62,6 +74,8 @@ function authMiddleware(req: express.Request, res: express.Response, next: expre
 }
 
 // API Routes
+app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
+
 app.get('/api/stats', async (req, res) => {
   try {
     const stats = {
@@ -89,10 +103,11 @@ app.get('/api/settings', async (req, res) => {
 
 app.put('/api/settings', authMiddleware, async (req, res) => {
   try {
+    const { id, ...data } = req.body;
     const settings = await getPrisma().settings.upsert({
       where: { id: 1 },
-      update: req.body,
-      create: { ...req.body, id: 1 }
+      update: data,
+      create: { ...data, id: 1 }
     });
     res.json(settings);
   } catch {
