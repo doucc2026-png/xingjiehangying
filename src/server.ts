@@ -5,6 +5,7 @@ import {
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
 import express from 'express';
+import cors from 'cors';
 import {join} from 'node:path';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
@@ -27,6 +28,7 @@ if (!fs.existsSync(dbFilePath)) {
 }
 
 const app = express();
+app.use(cors());
 const angularApp = new AngularNodeAppEngine();
 
 app.use(express.json({ limit: '1000mb' }));
@@ -50,12 +52,30 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 * 1024 } // 10GB limit to handle very large files
 });
 
-function getDb() {
-  const data = fs.readFileSync(dbFilePath, 'utf-8');
-  return JSON.parse(data);
+interface DbItem {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  createdAt: number;
+  content?: string;
+  fileUrl?: string;
+  thumbnailUrl?: string;
+  originalName?: string;
+  mimeType?: string;
+  size?: number;
 }
 
-function saveDb(data: any) {
+interface DbStructure {
+  contents: DbItem[];
+}
+
+function getDb(): DbStructure {
+  const data = fs.readFileSync(dbFilePath, 'utf-8');
+  return JSON.parse(data) as DbStructure;
+}
+
+function saveDb(data: DbStructure) {
   fs.writeFileSync(dbFilePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
@@ -65,18 +85,20 @@ app.get('/api/contents', (req, res) => {
   const db = getDb();
   let contents = db.contents;
   if (type) {
-    contents = contents.filter((c: any) => c.type === type);
+    contents = contents.filter((c: DbItem) => c.type === type);
   }
   // Sort by createdAt descending
-  contents.sort((a: any, b: any) => b.createdAt - a.createdAt);
+  contents.sort((a: DbItem, b: DbItem) => b.createdAt - a.createdAt);
   res.json(contents);
 });
 
-app.post('/api/contents', upload.array('files'), (req, res) => {
+app.post('/api/contents', upload.fields([{ name: 'files', maxCount: 10 }, { name: 'thumbnails', maxCount: 10 }]), (req, res) => {
   const type = req.body.type;
   const title = req.body.title;
   const description = req.body.description || '';
-  const files = req.files as Express.Multer.File[];
+  const filesMap = req.files as Record<string, Express.Multer.File[]>;
+  const files = filesMap['files'];
+  const thumbnails = filesMap['thumbnails'];
   
   if (!type || !title) {
     res.status(400).json({ error: 'Type and title are required' });
@@ -85,10 +107,10 @@ app.post('/api/contents', upload.array('files'), (req, res) => {
 
   const db = getDb();
   
-  // Articles can have text content instead of files
-  if (type === 'article' && !files?.length) {
+  // Articles and Topics can have text content instead of files
+  if ((type === 'article' || type === 'topic') && !files?.length) {
     const content = req.body.content || '';
-    const newContent = {
+    const newContent: DbItem = {
       id: uuidv4(),
       type,
       title,
@@ -102,20 +124,25 @@ app.post('/api/contents', upload.array('files'), (req, res) => {
     return;
   }
 
-  // Videos and Images
+  // Videos and Images (and Topics with files)
   if (!files || files.length === 0) {
      res.status(400).json({ error: 'Files are required for images and videos' });
      return;
   }
 
-  const newItems: any[] = [];
-  for (const file of files) {
-    const newContent = {
+  const newItems: DbItem[] = [];
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const thumb = thumbnails?.[i];
+
+    const newContent: DbItem = {
       id: uuidv4(),
       type,
       title: files.length > 1 ? `${title} - ${file.originalname}` : title,
       description,
+      content: (type === 'topic') ? (req.body.content || '') : undefined,
       fileUrl: `/api/uploads/${file.filename}`,
+      thumbnailUrl: thumb ? `/api/uploads/${thumb.filename}` : undefined,
       originalName: file.originalname,
       mimeType: file.mimetype,
       size: file.size,
@@ -133,7 +160,7 @@ app.put('/api/contents/:id', (req, res) => {
   const id = req.params.id;
   const { title, description, content } = req.body;
   const db = getDb();
-  const itemIndex = db.contents.findIndex((c: any) => c.id === id);
+  const itemIndex = db.contents.findIndex((c: DbItem) => c.id === id);
   
   if (itemIndex === -1) {
     res.status(404).json({ error: 'Not found' });
@@ -151,7 +178,7 @@ app.put('/api/contents/:id', (req, res) => {
 app.delete('/api/contents/:id', (req, res) => {
   const id = req.params.id;
   const db = getDb();
-  const itemIndex = db.contents.findIndex((c: any) => c.id === id);
+  const itemIndex = db.contents.findIndex((c: DbItem) => c.id === id);
   
   if (itemIndex === -1) {
     res.status(404).json({ error: 'Not found' });
@@ -161,9 +188,11 @@ app.delete('/api/contents/:id', (req, res) => {
   const item = db.contents[itemIndex];
   if (item.fileUrl) {
     const filename = item.fileUrl.split('/').pop();
-    const filePath = join(uploadsFolder, filename);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    if (filename) {
+      const filePath = join(uploadsFolder, filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
     }
   }
 

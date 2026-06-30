@@ -1,7 +1,8 @@
-import { Component, AfterViewInit, ElementRef, ViewChild, OnDestroy, PLATFORM_ID, inject } from '@angular/core';
+import { Component, AfterViewInit, ElementRef, ViewChild, OnDestroy, PLATFORM_ID, inject, computed } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { animate } from 'motion';
+import { ContentService } from './services/content.service';
 
 @Component({
   selector: 'app-about',
@@ -9,16 +10,32 @@ import { animate } from 'motion';
   imports: [CommonModule, MatIconModule],
   template: `
     <div class="max-w-screen-2xl mx-auto px-8 lg:px-24 py-24">
+      
+      <!-- Top Avatar Profile Header -->
+      <div class="flex flex-col items-center justify-center mb-24 text-center relative profile-header">
+         <div class="absolute inset-0 bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-900/20 z-0 h-64 rounded-[40px] -mt-10"></div>
+         @if (avatarUrl()) {
+           <div class="w-40 h-40 rounded-full overflow-hidden mb-6 shadow-2xl border-8 border-white dark:border-zinc-900 z-10 relative">
+              <img [src]="avatarUrl()" alt="Avatar" class="w-full h-full object-cover" referrerpolicy="no-referrer">
+           </div>
+         } @else {
+           <div class="w-40 h-40 rounded-full mb-6 shadow-2xl border-8 border-white dark:border-zinc-900 bg-orange-100 text-orange-500 flex items-center justify-center z-10 relative">
+              <mat-icon class="text-6xl">face</mat-icon>
+           </div>
+         }
+         <h1 class="text-6xl font-black mb-4 tracking-widest text-black dark:text-white z-10 relative">关于我</h1>
+         <p class="text-xl text-gray-500 font-bold tracking-widest dark:text-gray-400 z-10 relative">星界航影 <span class="text-orange-500 mx-2">·</span> 探索之美</p>
+      </div>
+
       <div class="flex flex-col lg:flex-row gap-24 items-center">
         
-        <!-- Info Section (Left Side, White Background, Separated) -->
-        <div class="lg:w-1/3 flex flex-col justify-center bg-white info-section">
+        <!-- Info Section (Left Side, Separated) -->
+        <div class="lg:w-1/3 flex flex-col justify-center bg-transparent info-section">
           
-          <h1 class="text-6xl font-black mb-6 tracking-widest text-black">关于我</h1>
           <div class="w-16 h-2 bg-orange-500 mb-12"></div>
           
-          <p class="text-gray-800 mb-16 text-xl leading-loose font-medium tracking-wide">
-            欢迎来到星界航影，这是一个专注于记录与分享的专属空间。我们用镜头捕捉世界，用文字传递温度。
+          <p class="text-gray-800 dark:text-gray-200 mb-16 text-xl leading-loose font-medium tracking-wide">
+            欢迎来到星界航影，这是一个专注于记录与分享的专属空间。我们用镜头捕捉世界，用真实画面表达事物。
           </p>
           
           <div class="flex flex-col gap-10">
@@ -63,12 +80,23 @@ import { animate } from 'motion';
 })
 export class AboutComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer') mapContainer!: ElementRef;
-  private map: any;
+  private map?: import('leaflet').Map;
   private platformId = inject(PLATFORM_ID);
+  contentService = inject(ContentService);
+  
+  avatarUrl = computed(() => {
+    const avatar = this.contentService.contents().find(c => c.type === 'avatar');
+    return avatar ? avatar.fileUrl : null;
+  });
   
   readonly shenzhenCoords: [number, number] = [22.5431, 114.0579];
 
+  constructor() {
+    this.contentService.loadContents();
+  }
+
   ngAfterViewInit() {
+    animate('.profile-header', { opacity: [0, 1], y: [-30, 0] }, { duration: 1, ease: 'easeOut' });
     animate('.info-section', { opacity: [0, 1], x: [-50, 0] }, { duration: 1, ease: 'easeOut' });
     animate('.map-section', { opacity: [0, 1], x: [50, 0] }, { duration: 1, ease: 'easeOut' });
 

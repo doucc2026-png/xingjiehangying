@@ -27,7 +27,7 @@ import { animate, stagger } from 'motion';
           @for (item of contentService.contents(); track item.id) {
             <div class="video-item flex flex-col lg:flex-row gap-16 items-center">
               <div class="w-full lg:w-3/5 bg-gray-50 aspect-video relative flex-shrink-0 rounded-[32px] overflow-hidden shadow-2xl">
-                <video [src]="item.fileUrl" controls class="w-full h-full object-contain bg-black" preload="metadata"></video>
+                <video [src]="item.fileUrl" [poster]="item.thumbnailUrl || ''" controls class="w-full h-full object-contain bg-black" preload="metadata"></video>
               </div>
               <div class="w-full lg:w-2/5 flex flex-col justify-center">
                 <div class="flex items-center gap-4 mb-6">

@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ContentService } from './services/content.service';
+import { ContentService, AppContent } from './services/content.service';
 import { MatIconModule } from '@angular/material/icon';
 import { animate, stagger } from 'motion';
 
@@ -21,9 +21,9 @@ import { animate, stagger } from 'motion';
 
       <div class="max-w-[1600px] mx-auto px-8 lg:px-24 py-32 relative z-10">
         <div class="text-center mb-32 hero-section h-[40vh] flex flex-col justify-center items-center">
-          <h1 class="text-6xl md:text-9xl font-black tracking-tighter mb-8 drop-shadow-2xl" [ngClass]="backgroundImageUrl() ? 'text-white' : 'text-black'">星界航影</h1>
-          <p class="text-2xl md:text-3xl font-bold tracking-widest max-w-3xl mx-auto drop-shadow-lg" [ngClass]="backgroundImageUrl() ? 'text-gray-100' : 'text-gray-800'">
-            欢迎来到星界航影 <span class="text-orange-400 mx-4">·</span> 探索之美 <span class="text-blue-400 mx-4">·</span> 光影瞬间
+          <h1 class="text-6xl md:text-9xl font-black tracking-tighter mb-8 drop-shadow-2xl" [ngClass]="backgroundImageUrl() ? 'text-white' : 'text-black'">探索世界</h1>
+          <p class="text-2xl md:text-3xl font-bold tracking-widest max-w-3xl mx-auto drop-shadow-lg mb-10" [ngClass]="backgroundImageUrl() ? 'text-gray-100' : 'text-gray-800'">
+            欢迎来到星界航影，记录生活，分享每一个值得被看见的瞬间。
           </p>
         </div>
 
@@ -39,11 +39,15 @@ import { animate, stagger } from 'motion';
                 <!-- Media Player / Viewer -->
                 <div class="overflow-hidden bg-gray-50 rounded-[16px] relative mb-6 h-80 flex items-center justify-center shadow-sm hover:shadow-xl transition-shadow">
                   @if (item.type === 'video') {
-                    <video [src]="item.fileUrl" class="w-full h-full object-cover bg-black" preload="metadata"></video>
+                    @if (item.thumbnailUrl) {
+                      <img [src]="item.thumbnailUrl" class="w-full h-full object-cover" alt="Video Thumbnail" referrerpolicy="no-referrer">
+                    } @else {
+                      <div class="w-full h-full bg-black"></div>
+                    }
                     <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
                     <mat-icon class="absolute text-white text-7xl drop-shadow-2xl z-10 pointer-events-none transform group-hover:scale-110 transition-transform">play_circle_filled</mat-icon>
                   } @else if (item.type === 'image') {
-                    <img [src]="item.fileUrl" [alt]="item.title" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" referrerpolicy="no-referrer">
+                    <img [src]="item.thumbnailUrl || item.fileUrl" [alt]="item.title" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" referrerpolicy="no-referrer">
                   } @else {
                     <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col justify-center items-center p-10 text-center transform group-hover:scale-105 transition-transform duration-700">
                       <mat-icon class="text-blue-200 text-8xl mb-6">menu_book</mat-icon>
@@ -81,7 +85,7 @@ export class HomeComponent implements OnInit {
   contentService = inject(ContentService);
 
   displayContents = computed(() => {
-    return this.contentService.contents().filter(c => c.type !== 'background');
+    return this.contentService.filteredContents().filter((c: AppContent) => c.type !== 'background');
   });
 
   backgroundImageUrl = computed(() => {

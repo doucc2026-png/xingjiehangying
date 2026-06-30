@@ -39,35 +39,38 @@ import { animate, stagger } from 'motion';
             
             <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-5">
               <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">分类 (Category)</label>
-                <select formControlName="type" class="p-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black transition-all">
+                <label for="type" class="text-sm font-medium">分类 (Category)</label>
+                <select id="type" formControlName="type" class="p-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black transition-all">
                   <option value="article">星文 (Article)</option>
                   <option value="video">星影 (Video)</option>
                   <option value="image">星像 (Image)</option>
+                  <option value="topic">专题 (Topic)</option>
                   <option value="background">背景图 (Background)</option>
                 </select>
               </div>
 
               <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">标题 (Title)</label>
-                <input type="text" formControlName="title" placeholder="输入标题..." class="p-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black transition-all">
+                <label for="title" class="text-sm font-medium">标题 (Title)</label>
+                <input id="title" type="text" formControlName="title" placeholder="输入标题..." class="p-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black transition-all">
               </div>
 
               <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">描述 (Description)</label>
-                <textarea formControlName="description" rows="3" placeholder="简短描述..." class="p-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black transition-all resize-none"></textarea>
+                <label for="description" class="text-sm font-medium">描述 (Description)</label>
+                <textarea id="description" formControlName="description" rows="3" placeholder="简短描述..." class="p-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black transition-all resize-none"></textarea>
               </div>
 
-              @if (form.value.type === 'article') {
+              @if (form.value.type === 'article' || form.value.type === 'topic') {
                 <div class="flex flex-col gap-1">
-                  <label class="text-sm font-medium">文章内容 (Content)</label>
-                  <textarea formControlName="content" rows="6" placeholder="输入文章正文..." class="p-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black transition-all resize-none"></textarea>
+                  <label for="content" class="text-sm font-medium">正文 (Content)</label>
+                  <textarea id="content" formControlName="content" rows="6" placeholder="输入正文..." class="p-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black transition-all resize-none"></textarea>
                 </div>
-              } @else if (!editingItem()) {
+              }
+              
+              @if (form.value.type !== 'article' && !editingItem()) {
                 <div class="flex flex-col gap-1">
-                  <label class="text-sm font-medium">上传文件 (Upload File)</label>
+                  <label for="fileUpload" class="text-sm font-medium">上传文件 (Upload File) {{ form.value.type === 'topic' ? '(可选 Optional)' : '' }}</label>
                   <div class="relative border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-black transition-colors cursor-pointer bg-gray-50">
-                     <input type="file" (change)="onFileSelected($event)" [multiple]="form.value.type === 'image'" [accept]="form.value.type === 'video' ? 'video/*' : 'image/*'" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                     <input id="fileUpload" type="file" (change)="onFileSelected($event)" [multiple]="form.value.type === 'image'" [accept]="form.value.type === 'video' ? 'video/*' : 'image/*'" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                      <mat-icon class="text-gray-400 mb-2">cloud_upload</mat-icon>
                      <p class="text-sm font-medium text-gray-600">点击或拖拽文件到此处</p>
                      @if (selectedFiles.length > 0) {
@@ -101,6 +104,36 @@ import { animate, stagger } from 'motion';
                 <p class="text-red-500 text-sm mt-2">{{ errorMessage() }}</p>
               }
             </form>
+
+            <!-- Independent Avatar Upload Form -->
+            <div class="mt-8 pt-8 border-t border-gray-100">
+              <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+                <mat-icon>face</mat-icon>头像上传 (Avatar)
+              </h2>
+              <form (ngSubmit)="onAvatarSubmit()" class="flex flex-col gap-5">
+                  <div class="flex flex-col gap-1">
+                    <label for="avatarUpload" class="text-sm font-medium">选择头像图片</label>
+                    <div class="relative border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-black transition-colors cursor-pointer bg-gray-50">
+                       <input id="avatarUpload" type="file" (change)="onAvatarSelected($event)" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                       <mat-icon class="text-gray-400 mb-2">cloud_upload</mat-icon>
+                       <p class="text-sm font-medium text-gray-600">点击或拖拽文件到此处</p>
+                       @if (selectedAvatar) {
+                          <p class="text-xs text-orange-500 mt-2 font-medium bg-orange-50 inline-block px-3 py-1 rounded-full">{{ selectedAvatar.name }}</p>
+                       }
+                    </div>
+                  </div>
+                  <button type="submit" [disabled]="!selectedAvatar || avatarUploading()" class="w-full bg-black text-white p-4 rounded-xl font-medium hover:bg-gray-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    @if (avatarUploading()) {
+                      <mat-icon class="animate-spin">sync</mat-icon> 上传中...
+                    } @else {
+                      <mat-icon>save</mat-icon> 保存头像
+                    }
+                  </button>
+                  @if (avatarErrorMessage()) {
+                    <p class="text-red-500 text-sm mt-2">{{ avatarErrorMessage() }}</p>
+                  }
+              </form>
+            </div>
           </div>
 
           <!-- Content List -->
@@ -123,9 +156,15 @@ import { animate, stagger } from 'motion';
                 @for (item of contentService.contents(); track item.id) {
                   <div class="content-item flex flex-col sm:flex-row gap-4 p-4 rounded-xl border bg-white shadow-sm hover:shadow-md transition-all" [class.border-black]="editingItem()?.id === item.id" [class.border-gray-100]="editingItem()?.id !== item.id">
                     
-                    @if (item.type === 'image' || item.type === 'background') {
-                      <div class="w-full sm:w-32 h-24 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                         <img [src]="item.fileUrl" [alt]="item.title" class="w-full h-full object-cover" referrerpolicy="no-referrer">
+                    @if (item.type === 'image' || item.type === 'background' || item.type === 'topic' || item.thumbnailUrl) {
+                      <div class="w-full sm:w-32 h-24 bg-gray-100 rounded-lg overflow-hidden shrink-0 relative">
+                         @if (item.thumbnailUrl || item.fileUrl) {
+                           <img [src]="item.thumbnailUrl || item.fileUrl" [alt]="item.title" class="w-full h-full object-cover" referrerpolicy="no-referrer">
+                         } @else {
+                           <div class="w-full h-full flex items-center justify-center bg-purple-50 text-purple-300">
+                             <mat-icon>dashboard</mat-icon>
+                           </div>
+                         }
                       </div>
                     } @else if (item.type === 'video') {
                       <div class="w-full sm:w-32 h-24 bg-black rounded-lg overflow-hidden shrink-0 relative flex items-center justify-center">
@@ -140,7 +179,7 @@ import { animate, stagger } from 'motion';
                     <div class="flex-1 flex flex-col justify-center">
                       <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold px-2 py-1 bg-gray-100 rounded-md uppercase tracking-wider">
-                          {{ item.type === 'article' ? '星文' : (item.type === 'video' ? '星影' : (item.type === 'image' ? '星像' : '背景')) }}
+                          {{ item.type === 'article' ? '星文' : (item.type === 'video' ? '星影' : (item.type === 'image' ? '星像' : (item.type === 'topic' ? '专题' : '背景'))) }}
                         </span>
                         <h3 class="font-bold text-lg leading-tight line-clamp-1">{{ item.title }}</h3>
                       </div>
@@ -179,6 +218,10 @@ export class AdminComponent implements OnInit {
   uploading = signal(false);
   errorMessage = signal('');
   editingItem = signal<AppContent | null>(null);
+
+  selectedAvatar: File | null = null;
+  avatarUploading = signal(false);
+  avatarErrorMessage = signal('');
 
   constructor() {
     this.form = this.fb.group({
@@ -234,9 +277,17 @@ export class AdminComponent implements OnInit {
     this.cancelEdit();
   }
 
-  onFileSelected(event: any) {
-    if (event.target.files) {
-      this.selectedFiles = Array.from(event.target.files);
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files) {
+      this.selectedFiles = Array.from(input.files);
+    }
+  }
+
+  onAvatarSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.selectedAvatar = input.files[0];
     }
   }
 
@@ -267,7 +318,7 @@ export class AdminComponent implements OnInit {
     const { type, title, description, content } = this.form.getRawValue();
     const editMode = this.editingItem();
     
-    if (!editMode && type !== 'article' && this.selectedFiles.length === 0) {
+    if (!editMode && type !== 'article' && type !== 'topic' && this.selectedFiles.length === 0) {
       this.errorMessage.set('请上传文件 (Please upload files)');
       return;
     }
@@ -293,20 +344,73 @@ export class AdminComponent implements OnInit {
         
         if (type === 'article') {
           formData.append('content', content);
+        } else if (type === 'topic') {
+          formData.append('content', content);
+          for (const file of this.selectedFiles) {
+            formData.append('files', file);
+          }
         } else {
           for (const file of this.selectedFiles) {
             formData.append('files', file);
+            
+            // Automatic Recognition: Generate thumbnail for videos
+            if (file.type.startsWith('video/')) {
+              try {
+                const thumbBlob = await this.generateVideoThumbnail(file);
+                if (thumbBlob) {
+                  formData.append('thumbnails', new File([thumbBlob], 'thumb.jpg', { type: 'image/jpeg' }));
+                }
+              } catch (e) {
+                console.warn('Could not generate thumbnail', e);
+              }
+            }
           }
         }
 
         await this.contentService.uploadContent(formData);
         this.cancelEdit(); // resets form
       }
-    } catch (e: any) {
-      this.errorMessage.set(e.message || 'Operation failed');
+    } catch (e: unknown) {
+      this.errorMessage.set((e as Error).message || 'Operation failed');
     } finally {
       this.uploading.set(false);
     }
+  }
+
+  private generateVideoThumbnail(file: File): Promise<Blob | null> {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+      video.src = URL.createObjectURL(file);
+      
+      video.onloadedmetadata = () => {
+        video.currentTime = Math.min(video.duration, 1); // Get frame at 1s or end
+      };
+      
+      video.onseeked = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((blob) => {
+            URL.revokeObjectURL(video.src);
+            resolve(blob);
+          }, 'image/jpeg', 0.7);
+        } else {
+          URL.revokeObjectURL(video.src);
+          resolve(null);
+        }
+      };
+      
+      video.onerror = () => {
+        URL.revokeObjectURL(video.src);
+        resolve(null);
+      };
+    });
   }
 
   async deleteItem(id: string) {
@@ -315,6 +419,28 @@ export class AdminComponent implements OnInit {
       if (this.editingItem()?.id === id) {
         this.cancelEdit();
       }
+    }
+  }
+
+  async onAvatarSubmit() {
+    if (!this.selectedAvatar) return;
+
+    this.avatarUploading.set(true);
+    this.avatarErrorMessage.set('');
+
+    try {
+      const formData = new FormData();
+      formData.append('type', 'avatar');
+      formData.append('title', '头像 (Avatar)');
+      formData.append('description', '用户上传的头像');
+      formData.append('files', this.selectedAvatar);
+
+      await this.contentService.uploadContent(formData);
+      this.selectedAvatar = null;
+    } catch (e: unknown) {
+      this.avatarErrorMessage.set((e as Error).message || 'Avatar upload failed');
+    } finally {
+      this.avatarUploading.set(false);
     }
   }
 }

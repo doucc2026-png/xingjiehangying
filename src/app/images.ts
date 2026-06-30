@@ -27,7 +27,7 @@ import { animate, stagger } from 'motion';
           @for (item of contentService.contents(); track item.id) {
             <div class="photo-frame break-inside-avoid relative group cursor-pointer border-0">
               <div class="overflow-hidden bg-gray-50 rounded-2xl relative">
-                <img [src]="item.fileUrl" [alt]="item.title" class="w-full h-auto transform group-hover:scale-105 transition-transform duration-700" referrerpolicy="no-referrer">
+                <img [src]="item.thumbnailUrl || item.fileUrl" [alt]="item.title" class="w-full h-auto transform group-hover:scale-105 transition-transform duration-700" referrerpolicy="no-referrer">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div class="absolute bottom-0 left-0 right-0 p-8 text-white translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                   <span class="text-xs font-bold bg-pink-500/80 text-white px-3 py-1 rounded-full tracking-widest mb-3 inline-block shadow-sm backdrop-blur-md">星像</span>

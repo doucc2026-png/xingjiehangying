@@ -1,12 +1,13 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 
 export interface AppContent {
   id: string;
-  type: 'article' | 'video' | 'image' | 'background';
+  type: 'article' | 'video' | 'image' | 'background' | 'topic' | 'avatar';
   title: string;
   description: string;
   content?: string; // For articles
   fileUrl?: string; // For videos and images
+  thumbnailUrl?: string; // For auto-generated covers
   createdAt: number;
 }
 
@@ -16,6 +17,15 @@ export interface AppContent {
 export class ContentService {
   contents = signal<AppContent[]>([]);
   loading = signal<boolean>(false);
+  searchTerm = signal<string>('');
+
+  filteredContents = computed(() => {
+    const term = this.searchTerm().toLowerCase();
+    return this.contents().filter(c => 
+      c.title.toLowerCase().includes(term) || 
+      c.description.toLowerCase().includes(term)
+    );
+  });
 
   async loadContents(type?: string) {
     this.loading.set(true);
@@ -54,7 +64,7 @@ export class ContentService {
     }
   }
 
-  async updateContent(id: string, data: any) {
+  async updateContent(id: string, data: Partial<AppContent>) {
     try {
       const res = await fetch(`/api/contents/${id}`, {
         method: 'PUT',
