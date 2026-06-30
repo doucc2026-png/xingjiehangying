@@ -1,0 +1,6 @@
+{
+  "name": "星界航影 StarVoyage",
+  "description": "星界航影是一个专属展示视频、图片、文章的官方网站，支持高清流媒体播放和图文阅读，采用现代响应式设计。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
