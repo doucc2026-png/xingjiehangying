@@ -16,7 +16,7 @@ import { ContentService } from './services/content.service';
     <nav class="fixed top-0 left-0 right-0 z-50 bg-[#faf7f2]/90 dark:bg-[#141210]/90 backdrop-blur-xl border-b border-black/5 dark:border-zinc-800/50 transition-colors duration-300">
       <div class="max-w-7xl mx-auto px-10 h-24 flex items-center justify-between">
         <a routerLink="/" class="text-3xl font-black tracking-widest flex items-center gap-3 text-orange-500 hover:text-orange-600 transition-colors">
-          <mat-icon class="text-4xl">camera</mat-icon> 星界航影
+          <mat-icon class="text-4xl">camera</mat-icon> {{ contentService.settings()?.siteName || '星界航影' }}
         </a>
 
         <!-- Search Bar -->
@@ -31,11 +31,12 @@ import { ContentService } from './services/content.service';
         </div>
 
         <!-- Desktop Menu -->
-        <div class="hidden md:flex items-center gap-10 font-bold tracking-widest text-base">
+        <div class="hidden md:flex items-center gap-8 font-bold tracking-widest text-base">
           <a routerLink="/" routerLinkActive="border-b-4 border-orange-500 text-orange-500" [routerLinkActiveOptions]="{exact: true}" class="text-gray-400 dark:text-gray-500 hover:text-orange-500 dark:hover:text-orange-500 transition-colors py-2">首页</a>
           <a routerLink="/articles" routerLinkActive="border-b-4 border-orange-500 text-orange-500" class="text-gray-400 dark:text-gray-500 hover:text-orange-500 dark:hover:text-orange-500 transition-colors py-2">星文</a>
           <a routerLink="/videos" routerLinkActive="border-b-4 border-orange-500 text-orange-500" class="text-gray-400 dark:text-gray-500 hover:text-orange-500 dark:hover:text-orange-500 transition-colors py-2">星影</a>
           <a routerLink="/images" routerLinkActive="border-b-4 border-orange-500 text-orange-500" class="text-gray-400 dark:text-gray-500 hover:text-orange-500 dark:hover:text-orange-500 transition-colors py-2">星像</a>
+          <a routerLink="/topics" routerLinkActive="border-b-4 border-orange-500 text-orange-500" class="text-gray-400 dark:text-gray-500 hover:text-orange-500 dark:hover:text-orange-500 transition-colors py-2">专题</a>
           <a routerLink="/about" routerLinkActive="border-b-4 border-orange-500 text-orange-500" class="text-gray-400 dark:text-gray-500 hover:text-orange-500 dark:hover:text-orange-500 transition-colors py-2">关于我</a>
           <button (click)="toggleTheme()" class="text-gray-400 dark:text-gray-500 hover:text-orange-500 dark:hover:text-orange-500 transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 ml-4 flex items-center justify-center">
              <mat-icon>{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
@@ -60,6 +61,7 @@ import { ContentService } from './services/content.service';
           <a routerLink="/articles" (click)="mobileMenuOpen.set(false)" class="text-gray-400 dark:text-gray-500 hover:text-orange-500 py-2 border-b border-gray-50 dark:border-zinc-800">星文</a>
           <a routerLink="/videos" (click)="mobileMenuOpen.set(false)" class="text-gray-400 dark:text-gray-500 hover:text-orange-500 py-2 border-b border-gray-50 dark:border-zinc-800">星影</a>
           <a routerLink="/images" (click)="mobileMenuOpen.set(false)" class="text-gray-400 dark:text-gray-500 hover:text-orange-500 py-2 border-b border-gray-50 dark:border-zinc-800">星像</a>
+          <a routerLink="/topics" (click)="mobileMenuOpen.set(false)" class="text-gray-400 dark:text-gray-500 hover:text-orange-500 py-2 border-b border-gray-50 dark:border-zinc-800">专题</a>
           <a routerLink="/about" (click)="mobileMenuOpen.set(false)" class="text-gray-400 dark:text-gray-500 hover:text-orange-500 py-2">关于我</a>
         </div>
       }
@@ -76,15 +78,15 @@ import { ContentService } from './services/content.service';
         <div class="max-w-7xl mx-auto px-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div class="flex items-center gap-3 text-black dark:text-white">
             <mat-icon class="text-xl">camera</mat-icon>
-            <span class="text-sm font-bold tracking-widest uppercase">星界航影</span>
+            <span class="text-sm font-bold tracking-widest uppercase">{{ contentService.settings()?.siteName || '星界航影' }}</span>
           </div>
           
           <div class="text-sm font-black tracking-widest text-black dark:text-white hover:text-orange-500 dark:hover:text-orange-400 transition-colors duration-300">
-            Jack.Jason
+            {{ contentService.settings()?.authorName || 'Jack.Jason' }}
           </div>
           
           <div class="text-xs font-bold tracking-widest text-black dark:text-white font-mono">
-            © 2026 星界航影
+            © 2026 {{ contentService.settings()?.siteName || '星界航影' }}
           </div>
         </div>
       </footer>

@@ -79,20 +79,76 @@ interface DbItem {
   size?: number;
 }
 
+interface SiteSettings {
+  siteName: string;
+  authorName: string;
+  location: string;
+  email: string;
+  aboutText: string;
+}
+
 interface DbStructure {
   contents: DbItem[];
+  settings: SiteSettings;
 }
+
+const defaultSettings: SiteSettings = {
+  siteName: '星界航影',
+  authorName: 'Jack.Jason',
+  location: '中国 · 深圳',
+  email: 'yanglb_2132@petalmail.com',
+  aboutText: '欢迎来到星界航影，这是一个专注于记录与分享的专属空间。我们用镜头捕捉世界，用真实画面表达事物。'
+};
 
 function getDb(): DbStructure {
   const data = fs.readFileSync(dbFilePath, 'utf-8');
-  return JSON.parse(data) as DbStructure;
+  const db = JSON.parse(data) as DbStructure;
+  if (!db.settings) {
+    db.settings = defaultSettings;
+  }
+  return db;
 }
 
 function saveDb(data: DbStructure) {
   fs.writeFileSync(dbFilePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
+// Auth Middleware
+const ADMIN_TOKEN = 'admin_secret_token_123'; // Simple token for demonstration
+function authMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const authHeader = req.headers.authorization;
+  if (authHeader === `Bearer ${ADMIN_TOKEN}`) {
+    next();
+  } else {
+    res.status(401).json({ error: 'Unauthorized' });
+  }
+}
+
 // API Routes
+app.get('/api/stats', (req, res) => {
+  const db = getDb();
+  const stats = {
+    total: db.contents.length,
+    articles: db.contents.filter(c => c.type === 'article').length,
+    videos: db.contents.filter(c => c.type === 'video').length,
+    images: db.contents.filter(c => c.type === 'image').length,
+    topics: db.contents.filter(c => c.type === 'topic').length,
+  };
+  res.json(stats);
+});
+
+app.get('/api/settings', (req, res) => {
+  const db = getDb();
+  res.json(db.settings || defaultSettings);
+});
+
+app.put('/api/settings', authMiddleware, (req, res) => {
+  const db = getDb();
+  db.settings = { ...db.settings, ...req.body };
+  saveDb(db);
+  res.json(db.settings);
+});
+
 app.get('/api/contents', (req, res) => {
   const type = req.query['type'] as string;
   const db = getDb();
@@ -105,7 +161,7 @@ app.get('/api/contents', (req, res) => {
   res.json(contents);
 });
 
-app.post('/api/contents', upload.fields([{ name: 'files', maxCount: 10 }, { name: 'thumbnails', maxCount: 10 }]), (req, res) => {
+app.post('/api/contents', authMiddleware, upload.fields([{ name: 'files', maxCount: 10 }, { name: 'thumbnails', maxCount: 10 }]), (req, res) => {
   const type = req.body.type;
   const title = req.body.title;
   const description = req.body.description || '';
@@ -169,8 +225,8 @@ app.post('/api/contents', upload.fields([{ name: 'files', maxCount: 10 }, { name
   res.json(newItems.length === 1 ? newItems[0] : newItems);
 });
 
-app.put('/api/contents/:id', (req, res) => {
-  const id = req.params.id;
+app.put('/api/contents/:id', authMiddleware, (req, res) => {
+  const id = req.params['id'];
   const { title, description, content } = req.body;
   const db = getDb();
   const itemIndex = db.contents.findIndex((c: DbItem) => c.id === id);
@@ -188,8 +244,8 @@ app.put('/api/contents/:id', (req, res) => {
   res.json(db.contents[itemIndex]);
 });
 
-app.delete('/api/contents/:id', (req, res) => {
-  const id = req.params.id;
+app.delete('/api/contents/:id', authMiddleware, (req, res) => {
+  const id = req.params['id'];
   const db = getDb();
   const itemIndex = db.contents.findIndex((c: DbItem) => c.id === id);
   

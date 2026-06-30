@@ -23,7 +23,7 @@ import { ContentService } from './services/content.service';
               <mat-icon class="text-6xl">face</mat-icon>
            </div>
          }
-         <h1 class="text-6xl font-black mb-4 tracking-widest text-black dark:text-white z-10 relative">关于我</h1>
+         <h1 class="text-6xl font-black mb-4 tracking-widest text-black dark:text-white z-10 relative">{{ contentService.settings()?.siteName || '星界航影' }}</h1>
          <p class="text-xl text-gray-500 font-bold tracking-widest dark:text-gray-400 z-10 relative">星界航影 <span class="text-orange-500 mx-2">·</span> 探索之美</p>
       </div>
 
@@ -35,7 +35,7 @@ import { ContentService } from './services/content.service';
           <div class="w-16 h-2 bg-orange-500 mb-12"></div>
           
           <p class="text-gray-800 dark:text-gray-200 mb-16 text-xl leading-loose font-medium tracking-wide">
-            欢迎来到星界航影，这是一个专注于记录与分享的专属空间。我们用镜头捕捉世界，用真实画面表达事物。
+            {{ contentService.settings()?.aboutText || '欢迎来到星界航影，这是一个专注于记录与分享的专属空间。我们用镜头捕捉世界，用真实画面表达事物。' }}
           </p>
           
           <div class="flex flex-col gap-10">
@@ -43,19 +43,19 @@ import { ContentService } from './services/content.service';
               <div class="w-16 h-16 bg-blue-50 text-blue-500 flex items-center justify-center rounded-2xl shadow-sm">
                 <mat-icon class="text-3xl">person</mat-icon>
               </div>
-              <span class="font-bold tracking-widest text-xl">Jack.Jason</span>
+              <span class="font-bold tracking-widest text-xl">{{ contentService.settings()?.authorName || 'Jack.Jason' }}</span>
             </div>
             <div class="flex items-center gap-6 text-black">
               <div class="w-16 h-16 bg-green-50 text-green-500 flex items-center justify-center rounded-2xl shadow-sm">
                 <mat-icon class="text-3xl">location_on</mat-icon>
               </div>
-              <span class="font-bold tracking-widest text-xl">中国 · 深圳</span>
+              <span class="font-bold tracking-widest text-xl">{{ contentService.settings()?.location || '中国 · 深圳' }}</span>
             </div>
             <div class="flex items-center gap-6 text-black">
               <div class="w-16 h-16 bg-pink-50 text-pink-500 flex items-center justify-center rounded-2xl shadow-sm">
                 <mat-icon class="text-3xl">email</mat-icon>
               </div>
-              <a href="mailto:yanglb_2132@petalmail.com" class="font-bold tracking-wider text-xl hover:text-orange-500 transition-colors">yanglb_2132&#64;petalmail.com</a>
+              <a [href]="'mailto:' + (contentService.settings()?.email || 'yanglb_2132@petalmail.com')" class="font-bold tracking-wider text-xl hover:text-orange-500 transition-colors">{{ contentService.settings()?.email || 'yanglb_2132@petalmail.com' }}</a>
             </div>
           </div>
         </div>

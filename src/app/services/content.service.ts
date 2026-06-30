@@ -11,14 +11,33 @@ export interface AppContent {
   createdAt: number;
 }
 
+export interface AppStats {
+  total: number;
+  articles: number;
+  videos: number;
+  images: number;
+  topics: number;
+}
+
+export interface SiteSettings {
+  siteName: string;
+  authorName: string;
+  location: string;
+  email: string;
+  aboutText: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ContentService {
   private platformId = inject(PLATFORM_ID);
   contents = signal<AppContent[]>([]);
+  settings = signal<SiteSettings | null>(null);
   loading = signal<boolean>(false);
   searchTerm = signal<string>('');
+  
+  private adminToken = 'admin_secret_token_123'; // Hardcoded for demo, should be managed securely
 
   filteredContents = computed(() => {
     const term = this.searchTerm().toLowerCase();
@@ -37,6 +56,49 @@ export class ContentService {
       return envUrl;
     }
     return '';
+  }
+
+  private getAuthHeaders() {
+    return {
+      'Authorization': `Bearer ${this.adminToken}`
+    };
+  }
+
+  async getStats(): Promise<AppStats> {
+    const baseUrl = this.getBaseUrl();
+    const res = await fetch(`${baseUrl}/api/stats`);
+    return await res.json();
+  }
+
+  async loadSettings() {
+    try {
+      const baseUrl = this.getBaseUrl();
+      const res = await fetch(`${baseUrl}/api/settings`);
+      if (res.ok) {
+        this.settings.set(await res.json());
+      }
+    } catch (e) {
+      console.error('Failed to load settings', e);
+    }
+  }
+
+  async updateSettings(data: SiteSettings) {
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        this.settings.set(await res.json());
+      }
+    } catch (e) {
+      console.error('Update settings failed', e);
+      throw e;
+    }
   }
 
   async loadContents(type?: string) {
@@ -60,6 +122,9 @@ export class ContentService {
     try {
       const res = await fetch('/api/contents', {
         method: 'POST',
+        headers: {
+          ...this.getAuthHeaders()
+        },
         body: formData
       });
       if (res.ok) {
@@ -82,7 +147,8 @@ export class ContentService {
       const res = await fetch(`/api/contents/${id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
         },
         body: JSON.stringify(data)
       });
@@ -100,7 +166,10 @@ export class ContentService {
   async deleteContent(id: string) {
     try {
       const res = await fetch(`/api/contents/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          ...this.getAuthHeaders()
+        }
       });
       if (res.ok) {
         this.contents.update(curr => curr.filter(c => c.id !== id));
