@@ -6,37 +6,31 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import cors from 'cors';
-import {join} from 'node:path';
+import { join, dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'node:fs';
+import { PrismaClient } from '@prisma/client';
 
-const browserDistFolder = process.env['VERCEL'] 
-  ? join(process.cwd(), 'dist/app/browser')
-  : join(import.meta.dirname, '../browser');
+let prisma: PrismaClient | null = null;
 
-const dataFolder = process.env['VERCEL']
-  ? join('/tmp', 'data')
-  : join(process.cwd(), 'data');
-const uploadsFolder = join(dataFolder, 'uploads');
-const dbFilePath = join(dataFolder, 'db.json');
-
-// Ensure directories exist
-if (!fs.existsSync(dataFolder)) {
-  fs.mkdirSync(dataFolder, { recursive: true });
-}
-if (!fs.existsSync(uploadsFolder)) {
-  fs.mkdirSync(uploadsFolder, { recursive: true });
-}
-if (!fs.existsSync(dbFilePath)) {
-  fs.writeFileSync(dbFilePath, JSON.stringify({ contents: [] }), 'utf-8');
+function getPrisma() {
+  if (!prisma) {
+    prisma = new PrismaClient();
+  }
+  return prisma;
 }
 
 const app = express();
 app.use(cors());
+
+const serverDistFolder = dirname(fileURLToPath(import.meta.url));
+const browserDistFolder = resolve(serverDistFolder, '../browser');
+
 const angularApp = new AngularNodeAppEngine();
 
-// Expose APP_URL to globalThis for SSR Absolute URLs
+// Expose APP_URL for SSR
 const getProdUrl = () => {
   if (process.env['APP_URL']) return process.env['APP_URL'];
   if (process.env['VERCEL_URL']) return `https://${process.env['VERCEL_URL']}`;
@@ -44,282 +38,152 @@ const getProdUrl = () => {
 };
 (globalThis as unknown as { APP_URL?: string }).APP_URL = getProdUrl();
 
-app.use(express.json({ limit: '1000mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1000mb' }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
-app.use('/api/uploads', express.static(uploadsFolder));
+// Data and Uploads (Local fallback)
+const dataFolder = process.env['VERCEL'] ? '/tmp/data' : join(process.cwd(), 'data');
+const uploadsFolder = join(dataFolder, 'uploads');
+
+if (!fs.existsSync(dataFolder)) fs.mkdirSync(dataFolder, { recursive: true });
+if (!fs.existsSync(uploadsFolder)) fs.mkdirSync(uploadsFolder, { recursive: true });
 
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsFolder);
-  },
-  filename: function (req, file, cb) {
-    const ext = file.originalname.split('.').pop();
-    const filename = `${uuidv4()}.${ext}`;
-    cb(null, filename);
-  }
+  destination: (req, file, cb) => cb(null, uploadsFolder),
+  filename: (req, file, cb) => cb(null, `${uuidv4()}-${file.originalname}`)
 });
+const upload = multer({ storage });
 
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 * 1024 } // 10GB limit to handle very large files
-});
-
-interface DbItem {
-  id: string;
-  type: string;
-  title: string;
-  description: string;
-  createdAt: number;
-  content?: string;
-  fileUrl?: string;
-  thumbnailUrl?: string;
-  originalName?: string;
-  mimeType?: string;
-  size?: number;
-}
-
-interface SiteSettings {
-  siteName: string;
-  authorName: string;
-  location: string;
-  email: string;
-  aboutText: string;
-}
-
-interface DbStructure {
-  contents: DbItem[];
-  settings: SiteSettings;
-}
-
-const defaultSettings: SiteSettings = {
-  siteName: '星界航影',
-  authorName: 'Jack.Jason',
-  location: '中国 · 深圳',
-  email: 'yanglb_2132@petalmail.com',
-  aboutText: '欢迎来到星界航影，这是一个专注于记录与分享的专属空间。我们用镜头捕捉世界，用真实画面表达事物。'
-};
-
-function getDb(): DbStructure {
-  try {
-    const data = fs.readFileSync(dbFilePath, 'utf-8');
-    const db = JSON.parse(data) as DbStructure;
-    if (!db.contents) {
-      db.contents = [];
-    }
-    if (!db.settings) {
-      db.settings = defaultSettings;
-    }
-    return db;
-  } catch (e) {
-    console.error('Failed to read or parse db.json, returning defaults', e);
-    return { contents: [], settings: defaultSettings };
-  }
-}
-
-function saveDb(data: DbStructure) {
-  try {
-    fs.writeFileSync(dbFilePath, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (e) {
-    console.error('Failed to save db.json', e);
-  }
-}
-
-// Auth Middleware
-const ADMIN_TOKEN = 'admin_secret_token_123'; // Simple token for demonstration
+// Admin Auth
+const ADMIN_TOKEN = 'admin_secret_token_123';
 function authMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (authHeader === `Bearer ${ADMIN_TOKEN}`) {
-    next();
-  } else {
-    res.status(401).json({ error: 'Unauthorized' });
-  }
+  if (req.headers.authorization === `Bearer ${ADMIN_TOKEN}`) return next();
+  res.status(401).json({ error: 'Unauthorized' });
 }
 
 // API Routes
-app.get('/api/stats', (req, res) => {
-  const db = getDb();
-  const stats = {
-    total: db.contents.length,
-    articles: db.contents.filter(c => c.type === 'article').length,
-    videos: db.contents.filter(c => c.type === 'video').length,
-    images: db.contents.filter(c => c.type === 'image').length,
-    topics: db.contents.filter(c => c.type === 'topic').length,
-  };
-  res.json(stats);
+app.get('/api/stats', async (req, res) => {
+  try {
+    const stats = {
+      total: await getPrisma().content.count(),
+      articles: await getPrisma().content.count({ where: { type: 'article' } }),
+      videos: await getPrisma().content.count({ where: { type: 'video' } }),
+      images: await getPrisma().content.count({ where: { type: 'image' } }),
+      topics: await getPrisma().content.count({ where: { type: 'topic' } }),
+    };
+    res.json(stats);
+  } catch {
+    res.json({ total: 0, articles: 0, videos: 0, images: 0, topics: 0 });
+  }
 });
 
-app.get('/api/settings', (req, res) => {
-  const db = getDb();
-  res.json(db.settings || defaultSettings);
+app.get('/api/settings', async (req, res) => {
+  try {
+    let settings = await getPrisma().settings.findFirst();
+    if (!settings) settings = await getPrisma().settings.create({ data: {} });
+    res.json(settings);
+  } catch {
+    res.json({ siteName: '星界航影', authorName: 'Jack.Jason' });
+  }
 });
 
-app.put('/api/settings', authMiddleware, (req, res) => {
-  const db = getDb();
-  db.settings = { ...db.settings, ...req.body };
-  saveDb(db);
-  res.json(db.settings);
+app.put('/api/settings', authMiddleware, async (req, res) => {
+  try {
+    const settings = await getPrisma().settings.upsert({
+      where: { id: 1 },
+      update: req.body,
+      create: { ...req.body, id: 1 }
+    });
+    res.json(settings);
+  } catch {
+    res.status(500).json({ error: 'Failed to update settings' });
+  }
 });
 
-app.get('/api/contents', (req, res) => {
+app.get('/api/contents', async (req, res) => {
   const type = req.query['type'] as string;
-  const db = getDb();
-  let contents = db.contents;
-  if (type) {
-    contents = contents.filter((c: DbItem) => c.type === type);
+  try {
+    const contents = await getPrisma().content.findMany({
+      where: type ? { type } : {},
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(contents);
+  } catch {
+    res.json([]);
   }
-  // Sort by createdAt descending
-  contents.sort((a: DbItem, b: DbItem) => b.createdAt - a.createdAt);
-  res.json(contents);
 });
 
-app.post('/api/contents', authMiddleware, upload.fields([{ name: 'files', maxCount: 10 }, { name: 'thumbnails', maxCount: 10 }]), (req, res) => {
-  const type = req.body.type;
-  const title = req.body.title;
-  const description = req.body.description || '';
+app.post('/api/contents', authMiddleware, upload.fields([{ name: 'files' }, { name: 'thumbnails' }]), async (req, res) => {
+  const { type, title, description, content } = req.body;
   const filesMap = req.files as Record<string, Express.Multer.File[]>;
-  const files = filesMap['files'];
-  const thumbnails = filesMap['thumbnails'];
-  
-  if (!type || !title) {
-    res.status(400).json({ error: 'Type and title are required' });
-    return;
-  }
+  const files = filesMap['files'] || [];
+  const thumbnails = filesMap['thumbnails'] || [];
 
-  const db = getDb();
-  
-  // Articles and Topics can have text content instead of files
-  if ((type === 'article' || type === 'topic') && !files?.length) {
-    const content = req.body.content || '';
-    const newContent: DbItem = {
-      id: uuidv4(),
-      type,
-      title,
-      description,
-      content,
-      createdAt: Date.now(),
-    };
-    db.contents.push(newContent);
-    saveDb(db);
-    res.json(newContent);
-    return;
-  }
-
-  // Videos and Images (and Topics with files)
-  if (!files || files.length === 0) {
-     res.status(400).json({ error: 'Files are required for images and videos' });
-     return;
-  }
-
-  const newItems: DbItem[] = [];
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const thumb = thumbnails?.[i];
-
-    const newContent: DbItem = {
-      id: uuidv4(),
-      type,
-      title: files.length > 1 ? `${title} - ${file.originalname}` : title,
-      description,
-      content: (type === 'topic') ? (req.body.content || '') : undefined,
-      fileUrl: `/api/uploads/${file.filename}`,
-      thumbnailUrl: thumb ? `/api/uploads/${thumb.filename}` : undefined,
-      originalName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-      createdAt: Date.now(),
-    };
-    db.contents.push(newContent);
-    newItems.push(newContent);
-  }
-  
-  saveDb(db);
-  res.json(newItems.length === 1 ? newItems[0] : newItems);
-});
-
-app.put('/api/contents/:id', authMiddleware, (req, res) => {
-  const id = req.params['id'];
-  const { title, description, content } = req.body;
-  const db = getDb();
-  const itemIndex = db.contents.findIndex((c: DbItem) => c.id === id);
-  
-  if (itemIndex === -1) {
-    res.status(404).json({ error: 'Not found' });
-    return;
-  }
-
-  if (title) db.contents[itemIndex].title = title;
-  if (description !== undefined) db.contents[itemIndex].description = description;
-  if (content !== undefined) db.contents[itemIndex].content = content;
-  
-  saveDb(db);
-  res.json(db.contents[itemIndex]);
-});
-
-app.delete('/api/contents/:id', authMiddleware, (req, res) => {
-  const id = req.params['id'];
-  const db = getDb();
-  const itemIndex = db.contents.findIndex((c: DbItem) => c.id === id);
-  
-  if (itemIndex === -1) {
-    res.status(404).json({ error: 'Not found' });
-    return;
-  }
-
-  const item = db.contents[itemIndex];
-  if (item.fileUrl) {
-    const filename = item.fileUrl.split('/').pop();
-    if (filename) {
-      const filePath = join(uploadsFolder, filename);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
+  try {
+    if ((type === 'article' || type === 'topic') && files.length === 0) {
+      const item = await getPrisma().content.create({
+        data: { type, title, description, content, createdAt: new Date() }
+      });
+      res.json(item);
+      return;
     }
-  }
 
-  db.contents.splice(itemIndex, 1);
-  saveDb(db);
-  res.json({ success: true });
+    const createdItems = [];
+    for (let i = 0; i < files.length; i++) {
+      const item = await getPrisma().content.create({
+        data: {
+          type,
+          title: files.length > 1 ? `${title} (${i+1})` : title,
+          description,
+          content: type === 'topic' ? content : undefined,
+          fileUrl: `/api/uploads/${files[i].filename}`,
+          thumbnailUrl: thumbnails[i] ? `/api/uploads/${thumbnails[i].filename}` : undefined,
+          createdAt: new Date()
+        }
+      });
+      createdItems.push(item);
+    }
+    res.json(createdItems.length === 1 ? createdItems[0] : createdItems);
+  } catch {
+    res.status(500).json({ error: 'Failed to create content' });
+  }
 });
 
-/**
- * Serve static files from /browser
- */
-app.use(
-  express.static(browserDistFolder, {
-    maxAge: '1y',
-    index: false,
-    redirect: false,
-  }),
-);
+app.delete('/api/contents/:id', authMiddleware, async (req, res) => {
+  try {
+    const id = req.params['id'];
+    if (typeof id !== 'string') {
+      res.status(400).json({ error: 'Invalid ID' });
+      return;
+    }
+    await getPrisma().content.delete({ where: { id } });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'Failed to delete' });
+  }
+});
 
-/**
- * Handle all other requests by rendering the Angular application.
- */
+app.use('/api/uploads', express.static(uploadsFolder));
+
+// Serve static files
+app.use(express.static(browserDistFolder, {
+  maxAge: '1y',
+  index: false,
+  redirect: false,
+}));
+
+// SSR
 app.use((req, res, next) => {
   angularApp
     .handle(req)
-    .then((response) =>
-      response ? writeResponseToNodeResponse(response, res) : next(),
-    )
+    .then((response) => response ? writeResponseToNodeResponse(response, res) : next())
     .catch(next);
 });
 
-/**
- * Start the server if this module is the main entry point, or it is ran via PM2.
- * The server listens on the port defined by the `PORT` environment variable, or defaults to 4000.
- */
-if (isMainModule(import.meta.url) || process.env['pm_id']) {
+if (isMainModule(import.meta.url)) {
   const port = process.env['PORT'] || 3000;
-  app.listen(port, () => {
-    console.log(`Node Express server listening on http://localhost:${port}`);
-  });
+  app.listen(port, () => console.log(`Server listening on http://localhost:${port}`));
 }
 
-/**
- * Request handler used by the Angular CLI (for dev-server and during build) or Firebase Cloud Functions.
- */
 export const reqHandler = createNodeRequestHandler(app);
-
-// Export for Vercel
 export default app;

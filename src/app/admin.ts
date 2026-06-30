@@ -384,7 +384,7 @@ export class AdminComponent implements OnInit {
       }
       await this.loadDashboardData();
       this.cancelEdit();
-    } catch (_e) {
+    } catch {
       this.errorMessage.set('提交失败');
     } finally {
       this.uploading.set(false);

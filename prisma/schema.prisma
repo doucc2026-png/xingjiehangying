@@ -3,7 +3,25 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+}
+
+model Content {
+  id          String   @id @default(cuid())
+  type        String
+  title       String
+  description String?
+  content     String?  @db.Text
+  fileUrl     String?
+  thumbnailUrl String?
+  createdAt   DateTime @default(now())
+}
+
+model Settings {
+  id         Int      @id @default(1)
+  siteName   String   @default("星界航影")
+  authorName String   @default("Jack.Jason")
+  location   String   @default("中国 · 深圳")
+  email      String   @default("yanglb_2132@petalmail.com")
+  aboutText  String   @default("欢迎来到星界航影，这是一个专注于记录与分享的专属空间。我们用镜头捕捉世界，用真实画面表达事物。")
 }
