@@ -127,14 +127,15 @@ export class AboutComponent implements AfterViewInit, OnDestroy {
     const satelliteLayer = L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       subdomains: '1234',
-      attribution: '&copy; 高德地图 Amap (Satellite)'
+      attribution: '&copy; 高德地图 (Satellite)'
     });
     
-    // Gaode Road Network and Labels (High Density)
+    // Gaode Road Network and Labels (High Precision Overlay)
     const roadLayer = L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       subdomains: '1234',
-      opacity: 1
+      opacity: 0.95,
+      pane: 'overlayPane' // Ensures labels are above everything
     });
 
     satelliteLayer.addTo(this.map);

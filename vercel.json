@@ -1,26 +1,25 @@
 {
   "version": 2,
-  "builds": [
+  "public": true,
+  "rewrites": [
     {
-      "src": "package.json",
-      "use": "@vercel/node"
+      "source": "/api/(.*)",
+      "destination": "/api/server.mjs"
+    },
+    {
+      "source": "/uploads/(.*)",
+      "destination": "/uploads/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/api/server.mjs"
     }
   ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "dist/app/server/server.mjs"
-    },
-    {
-      "src": "/uploads/(.*)",
-      "dest": "uploads/$1"
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "dist/app/server/server.mjs"
+  "functions": {
+    "api/server.mjs": {
+      "runtime": "nodejs20.x",
+      "memory": 1024,
+      "maxDuration": 10
     }
-  ]
+  }
 }
