@@ -1,5 +1,5 @@
-import { Component, inject, OnInit, effect, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit, effect, computed, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ContentService, AppContent } from './services/content.service';
 import { MatIconModule } from '@angular/material/icon';
 import { animate, stagger } from 'motion';
@@ -83,6 +83,7 @@ import { animate, stagger } from 'motion';
 })
 export class HomeComponent implements OnInit {
   contentService = inject(ContentService);
+  private platformId = inject(PLATFORM_ID);
 
   displayContents = computed(() => {
     return this.contentService.filteredContents().filter((c: AppContent) => c.type !== 'background');
@@ -96,7 +97,7 @@ export class HomeComponent implements OnInit {
   constructor() {
     effect(() => {
       const contents = this.displayContents();
-      if (contents.length >= 0) { // animate even if 0 if loaded
+      if (contents.length >= 0 && isPlatformBrowser(this.platformId)) {
         setTimeout(() => {
           const hero = document.querySelector('.hero-section');
           if (hero) {

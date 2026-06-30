@@ -1,4 +1,4 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject, PLATFORM_ID } from '@angular/core';
 
 export interface AppContent {
   id: string;
@@ -15,6 +15,7 @@ export interface AppContent {
   providedIn: 'root'
 })
 export class ContentService {
+  private platformId = inject(PLATFORM_ID);
   contents = signal<AppContent[]>([]);
   loading = signal<boolean>(false);
   searchTerm = signal<string>('');
@@ -27,10 +28,20 @@ export class ContentService {
     );
   });
 
+  private getBaseUrl(): string {
+    if (typeof window === 'undefined') {
+      // In SSR/Prerendering, we must use absolute URLs
+      // Defaulting to localhost:3000 as the app runs on port 3000 in AI Studio
+      return 'http://localhost:3000';
+    }
+    return '';
+  }
+
   async loadContents(type?: string) {
     this.loading.set(true);
     try {
-      const url = type ? `/api/contents?type=${type}` : '/api/contents';
+      const baseUrl = this.getBaseUrl();
+      const url = type ? `${baseUrl}/api/contents?type=${type}` : `${baseUrl}/api/contents`;
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();

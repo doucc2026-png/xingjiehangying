@@ -1,5 +1,5 @@
-import { Component, inject, OnInit, signal, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit, signal, effect, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ContentService, AppContent } from './services/content.service';
 import { MatIconModule } from '@angular/material/icon';
@@ -209,6 +209,7 @@ import { animate, stagger } from 'motion';
 export class AdminComponent implements OnInit {
   contentService = inject(ContentService);
   fb = inject(FormBuilder);
+  private platformId = inject(PLATFORM_ID);
 
   isAuthenticated = signal(false);
   password = '';
@@ -232,7 +233,7 @@ export class AdminComponent implements OnInit {
     });
 
     effect(() => {
-      if (this.isAuthenticated()) {
+      if (this.isAuthenticated() && isPlatformBrowser(this.platformId)) {
         const contents = this.contentService.contents();
         if (contents.length > 0) {
           setTimeout(() => {
@@ -251,10 +252,8 @@ export class AdminComponent implements OnInit {
   }
 
   ngOnInit() {
-    // We only load contents if authenticated, but doing it early is fine too.
     this.contentService.loadContents();
     
-    // Reset file selection and clear fields when type changes if not editing
     this.form.get('type')?.valueChanges.subscribe(() => {
       if (!this.editingItem()) {
         this.selectedFiles = [];
@@ -264,11 +263,13 @@ export class AdminComponent implements OnInit {
 
   login(event: Event) {
     event.preventDefault();
-    if (this.password === 'admin123') { // Simple hardcoded demo password
+    if (this.password === 'admin123') { 
       this.isAuthenticated.set(true);
       this.password = '';
     } else {
-      alert('密码错误。仅供管理员访问。可以尝试输入: admin123');
+      if (isPlatformBrowser(this.platformId)) {
+        alert('密码错误。仅供管理员访问。可以尝试输入: admin123');
+      }
     }
   }
 
@@ -299,7 +300,6 @@ export class AdminComponent implements OnInit {
       description: item.description || '',
       content: item.content || ''
     });
-    // Disable type changing when editing
     this.form.get('type')?.disable();
   }
 
@@ -314,7 +314,6 @@ export class AdminComponent implements OnInit {
   async onSubmit() {
     if (this.form.invalid) return;
 
-    // form.value doesn't include disabled fields, so we get raw value
     const { type, title, description, content } = this.form.getRawValue();
     const editMode = this.editingItem();
     
@@ -328,7 +327,6 @@ export class AdminComponent implements OnInit {
 
     try {
       if (editMode) {
-        // Edit API Call
         await this.contentService.updateContent(editMode.id, {
           title,
           description,
@@ -336,7 +334,6 @@ export class AdminComponent implements OnInit {
         });
         this.cancelEdit();
       } else {
-        // Upload API Call
         const formData = new FormData();
         formData.append('type', type);
         formData.append('title', title);
@@ -353,8 +350,7 @@ export class AdminComponent implements OnInit {
           for (const file of this.selectedFiles) {
             formData.append('files', file);
             
-            // Automatic Recognition: Generate thumbnail for videos
-            if (file.type.startsWith('video/')) {
+            if (file.type.startsWith('video/') && isPlatformBrowser(this.platformId)) {
               try {
                 const thumbBlob = await this.generateVideoThumbnail(file);
                 if (thumbBlob) {
@@ -368,7 +364,7 @@ export class AdminComponent implements OnInit {
         }
 
         await this.contentService.uploadContent(formData);
-        this.cancelEdit(); // resets form
+        this.cancelEdit();
       }
     } catch (e: unknown) {
       this.errorMessage.set((e as Error).message || 'Operation failed');
@@ -379,6 +375,10 @@ export class AdminComponent implements OnInit {
 
   private generateVideoThumbnail(file: File): Promise<Blob | null> {
     return new Promise((resolve) => {
+      if (!isPlatformBrowser(this.platformId)) {
+        resolve(null);
+        return;
+      }
       const video = document.createElement('video');
       video.preload = 'metadata';
       video.muted = true;
@@ -386,7 +386,7 @@ export class AdminComponent implements OnInit {
       video.src = URL.createObjectURL(file);
       
       video.onloadedmetadata = () => {
-        video.currentTime = Math.min(video.duration, 1); // Get frame at 1s or end
+        video.currentTime = Math.min(video.duration, 1);
       };
       
       video.onseeked = () => {
@@ -414,7 +414,7 @@ export class AdminComponent implements OnInit {
   }
 
   async deleteItem(id: string) {
-    if (confirm('确定要删除此内容吗？')) {
+    if (isPlatformBrowser(this.platformId) && confirm('确定要删除此内容吗？')) {
       await this.contentService.deleteContent(id);
       if (this.editingItem()?.id === id) {
         this.cancelEdit();

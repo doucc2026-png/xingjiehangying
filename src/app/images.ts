@@ -1,5 +1,5 @@
-import { Component, inject, OnInit, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit, effect, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ContentService } from './services/content.service';
 import { MatIconModule } from '@angular/material/icon';
 import { animate, stagger } from 'motion';
@@ -44,10 +44,11 @@ import { animate, stagger } from 'motion';
 })
 export class ImagesComponent implements OnInit {
   contentService = inject(ContentService);
+  private platformId = inject(PLATFORM_ID);
 
   constructor() {
     effect(() => {
-      if (this.contentService.contents().length > 0) {
+      if (this.contentService.contents().length > 0 && isPlatformBrowser(this.platformId)) {
         setTimeout(() => {
           animate('.page-header', { opacity: [0, 1], y: [-30, 0] }, { duration: 0.8, ease: 'easeOut' });
           const cards = document.querySelectorAll('.photo-frame');

@@ -96,11 +96,10 @@ export class AboutComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit() {
-    animate('.profile-header', { opacity: [0, 1], y: [-30, 0] }, { duration: 1, ease: 'easeOut' });
-    animate('.info-section', { opacity: [0, 1], x: [-50, 0] }, { duration: 1, ease: 'easeOut' });
-    animate('.map-section', { opacity: [0, 1], x: [50, 0] }, { duration: 1, ease: 'easeOut' });
-
     if (isPlatformBrowser(this.platformId)) {
+      animate('.profile-header', { opacity: [0, 1], y: [-30, 0] }, { duration: 1, ease: 'easeOut' });
+      animate('.info-section', { opacity: [0, 1], x: [-50, 0] }, { duration: 1, ease: 'easeOut' });
+      animate('.map-section', { opacity: [0, 1], x: [50, 0] }, { duration: 1, ease: 'easeOut' });
       this.initMap();
     }
   }
