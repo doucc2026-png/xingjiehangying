@@ -101,16 +101,28 @@ const defaultSettings: SiteSettings = {
 };
 
 function getDb(): DbStructure {
-  const data = fs.readFileSync(dbFilePath, 'utf-8');
-  const db = JSON.parse(data) as DbStructure;
-  if (!db.settings) {
-    db.settings = defaultSettings;
+  try {
+    const data = fs.readFileSync(dbFilePath, 'utf-8');
+    const db = JSON.parse(data) as DbStructure;
+    if (!db.contents) {
+      db.contents = [];
+    }
+    if (!db.settings) {
+      db.settings = defaultSettings;
+    }
+    return db;
+  } catch (e) {
+    console.error('Failed to read or parse db.json, returning defaults', e);
+    return { contents: [], settings: defaultSettings };
   }
-  return db;
 }
 
 function saveDb(data: DbStructure) {
-  fs.writeFileSync(dbFilePath, JSON.stringify(data, null, 2), 'utf-8');
+  try {
+    fs.writeFileSync(dbFilePath, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('Failed to save db.json', e);
+  }
 }
 
 // Auth Middleware

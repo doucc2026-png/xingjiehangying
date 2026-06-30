@@ -3,7 +3,6 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ContentService, AppContent, AppStats } from './services/content.service';
 import { MatIconModule } from '@angular/material/icon';
-import { animate, stagger } from 'motion';
 
 @Component({
   selector: 'app-admin',
@@ -111,8 +110,8 @@ import { animate, stagger } from 'motion';
               
               <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-5">
                 <div class="flex flex-col gap-1">
-                  <label for="type" class="text-sm font-bold tracking-widest uppercase text-gray-400">分类</label>
-                  <select id="type" formControlName="type" class="p-4 rounded-xl border border-gray-100 bg-gray-50 font-bold">
+                  <label for="type-select" class="text-sm font-bold tracking-widest uppercase text-gray-400">分类</label>
+                  <select id="type-select" formControlName="type" class="p-4 rounded-xl border border-gray-100 bg-gray-50 font-bold">
                     <option value="article">星文 (Article)</option>
                     <option value="video">星影 (Video)</option>
                     <option value="image">星像 (Image)</option>
@@ -122,27 +121,27 @@ import { animate, stagger } from 'motion';
                 </div>
 
                 <div class="flex flex-col gap-1">
-                  <label for="title" class="text-sm font-bold tracking-widest uppercase text-gray-400">标题</label>
-                  <input id="title" type="text" formControlName="title" placeholder="输入标题..." class="p-4 rounded-xl border border-gray-100 bg-gray-50 font-bold focus:ring-2 focus:ring-black outline-none transition-all">
+                  <label for="title-input" class="text-sm font-bold tracking-widest uppercase text-gray-400">标题</label>
+                  <input id="title-input" type="text" formControlName="title" placeholder="输入标题..." class="p-4 rounded-xl border border-gray-100 bg-gray-50 font-bold focus:ring-2 focus:ring-black outline-none transition-all">
                 </div>
 
                 <div class="flex flex-col gap-1">
-                  <label for="description" class="text-sm font-bold tracking-widest uppercase text-gray-400">描述</label>
-                  <textarea id="description" formControlName="description" rows="3" placeholder="简短描述..." class="p-4 rounded-xl border border-gray-100 bg-gray-50 font-medium focus:ring-2 focus:ring-black outline-none transition-all resize-none"></textarea>
+                  <label for="desc-input" class="text-sm font-bold tracking-widest uppercase text-gray-400">描述</label>
+                  <textarea id="desc-input" formControlName="description" rows="3" placeholder="简短描述..." class="p-4 rounded-xl border border-gray-100 bg-gray-50 font-medium focus:ring-2 focus:ring-black outline-none transition-all resize-none"></textarea>
                 </div>
 
                 @if (form.value.type === 'article' || form.value.type === 'topic') {
                   <div class="flex flex-col gap-1">
-                    <label for="content" class="text-sm font-bold tracking-widest uppercase text-gray-400">正文</label>
-                    <textarea id="content" formControlName="content" rows="6" placeholder="输入正文..." class="p-4 rounded-xl border border-gray-100 bg-gray-50 font-medium focus:ring-2 focus:ring-black outline-none transition-all resize-none"></textarea>
+                    <label for="content-input" class="text-sm font-bold tracking-widest uppercase text-gray-400">正文</label>
+                    <textarea id="content-input" formControlName="content" rows="6" placeholder="输入正文..." class="p-4 rounded-xl border border-gray-100 bg-gray-50 font-medium focus:ring-2 focus:ring-black outline-none transition-all resize-none"></textarea>
                   </div>
                 }
                 
                 @if (form.value.type !== 'article' && !editingItem()) {
                   <div class="flex flex-col gap-1">
-                    <label class="text-sm font-bold tracking-widest uppercase text-gray-400">上传文件</label>
+                    <label for="file-upload" class="text-sm font-bold tracking-widest uppercase text-gray-400">上传文件</label>
                     <div class="relative border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center hover:border-black transition-colors cursor-pointer bg-gray-50">
-                       <input type="file" (change)="onFileSelected($event)" [multiple]="form.value.type === 'image'" [accept]="form.value.type === 'video' ? 'video/*' : 'image/*'" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                       <input id="file-upload" type="file" (change)="onFileSelected($event)" [multiple]="form.value.type === 'image'" [accept]="form.value.type === 'video' ? 'video/*' : 'image/*'" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                        <mat-icon class="text-gray-300 text-4xl mb-2">cloud_upload</mat-icon>
                        <p class="text-sm font-bold text-gray-400">点击或拖拽文件</p>
                        @if (selectedFiles.length > 0) {
@@ -213,25 +212,25 @@ import { animate, stagger } from 'motion';
               <form [formGroup]="settingsForm" (ngSubmit)="saveSettings()" class="flex flex-col gap-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div class="flex flex-col gap-2">
-                    <label class="text-sm font-bold tracking-widest uppercase text-gray-400">网站名称</label>
-                    <input formControlName="siteName" class="p-4 rounded-2xl border border-gray-100 bg-gray-50 font-bold focus:ring-2 focus:ring-black outline-none">
+                    <label for="site-name" class="text-sm font-bold tracking-widest uppercase text-gray-400">网站名称</label>
+                    <input id="site-name" formControlName="siteName" class="p-4 rounded-2xl border border-gray-100 bg-gray-50 font-bold focus:ring-2 focus:ring-black outline-none">
                   </div>
                   <div class="flex flex-col gap-2">
-                    <label class="text-sm font-bold tracking-widest uppercase text-gray-400">作者姓名</label>
-                    <input formControlName="authorName" class="p-4 rounded-2xl border border-gray-100 bg-gray-50 font-bold focus:ring-2 focus:ring-black outline-none">
+                    <label for="author-name" class="text-sm font-bold tracking-widest uppercase text-gray-400">作者姓名</label>
+                    <input id="author-name" formControlName="authorName" class="p-4 rounded-2xl border border-gray-100 bg-gray-50 font-bold focus:ring-2 focus:ring-black outline-none">
                   </div>
                   <div class="flex flex-col gap-2">
-                    <label class="text-sm font-bold tracking-widest uppercase text-gray-400">地理位置</label>
-                    <input formControlName="location" class="p-4 rounded-2xl border border-gray-100 bg-gray-50 font-bold focus:ring-2 focus:ring-black outline-none">
+                    <label for="location-input" class="text-sm font-bold tracking-widest uppercase text-gray-400">地理位置</label>
+                    <input id="location-input" formControlName="location" class="p-4 rounded-2xl border border-gray-100 bg-gray-50 font-bold focus:ring-2 focus:ring-black outline-none">
                   </div>
                   <div class="flex flex-col gap-2">
-                    <label class="text-sm font-bold tracking-widest uppercase text-gray-400">联系邮箱</label>
-                    <input formControlName="email" class="p-4 rounded-2xl border border-gray-100 bg-gray-50 font-bold focus:ring-2 focus:ring-black outline-none">
+                    <label for="email-input" class="text-sm font-bold tracking-widest uppercase text-gray-400">联系邮箱</label>
+                    <input id="email-input" formControlName="email" class="p-4 rounded-2xl border border-gray-100 bg-gray-50 font-bold focus:ring-2 focus:ring-black outline-none">
                   </div>
                 </div>
                 <div class="flex flex-col gap-2">
-                  <label class="text-sm font-bold tracking-widest uppercase text-gray-400">关于我描述</label>
-                  <textarea formControlName="aboutText" rows="5" class="p-4 rounded-2xl border border-gray-100 bg-gray-50 font-medium focus:ring-2 focus:ring-black outline-none resize-none"></textarea>
+                  <label for="about-text" class="text-sm font-bold tracking-widest uppercase text-gray-400">关于我描述</label>
+                  <textarea id="about-text" formControlName="aboutText" rows="5" class="p-4 rounded-2xl border border-gray-100 bg-gray-50 font-medium focus:ring-2 focus:ring-black outline-none resize-none"></textarea>
                 </div>
                 <button type="submit" [disabled]="settingsForm.invalid || uploading()" class="bg-black text-white p-5 rounded-2xl font-bold tracking-widest hover:bg-gray-800 transition-all flex items-center justify-center gap-2">
                   <mat-icon>save</mat-icon>保存所有设置
@@ -385,7 +384,7 @@ export class AdminComponent implements OnInit {
       }
       await this.loadDashboardData();
       this.cancelEdit();
-    } catch (e) {
+    } catch (_e) {
       this.errorMessage.set('提交失败');
     } finally {
       this.uploading.set(false);
