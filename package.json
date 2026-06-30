@@ -9,6 +9,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
+    "postinstall": "prisma generate",
     "serve:ssr:app": "node dist/app/server/server.mjs"
   },
   "private": true,

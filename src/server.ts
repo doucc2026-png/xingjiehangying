@@ -19,9 +19,17 @@ function getPrisma() {
   if (!prisma) {
     const dbUrl = process.env["DATABASE_URL"];
     if (!dbUrl) {
-      console.warn('DATABASE_URL is not set. Prisma will fail.');
+      console.warn('DATABASE_URL is not set. Prisma initialization will use defaults and may fail at runtime.');
     }
-    prisma = new PrismaClient();
+    // Prisma 7 initialization. Using any to bypass type strictness during build/prerender
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    prisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: dbUrl || 'postgresql://localhost:5432/unused'
+        }
+      }
+    } as any);
   }
   return prisma;
 }
@@ -31,10 +39,13 @@ app.use(cors());
 
 // Request logging for debugging
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api')) {
-    console.log(`[API Request] ${req.method} ${req.path}`);
-  }
+  console.log(`[Request] ${req.method} ${req.url}`);
   next();
+});
+
+app.all('/triggers/github', (req, res) => {
+  console.log('[Trigger] github detected');
+  res.status(200).json({ ok: true });
 });
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
@@ -103,7 +114,8 @@ app.get('/api/settings', async (req, res) => {
 
 app.put('/api/settings', authMiddleware, async (req, res) => {
   try {
-    const { id, ...data } = req.body;
+    const data = { ...req.body };
+    delete data.id;
     const settings = await getPrisma().settings.upsert({
       where: { id: 1 },
       update: data,
