@@ -10,7 +10,12 @@
     },
     {
       "src": "src/server.ts",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "dist/app/browser/**"
+        ]
+      }
     }
   ],
   "rewrites": [
@@ -20,7 +25,7 @@
     },
     {
       "source": "/uploads/(.*)",
-      "destination": "/uploads/$1"
+      "destination": "/api/uploads/$1"
     },
     {
       "source": "/(.*)",
