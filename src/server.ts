@@ -21,15 +21,14 @@ function getPrisma() {
     if (!dbUrl) {
       console.warn('DATABASE_URL is not set. Prisma initialization will use defaults and may fail at runtime.');
     }
-    // Prisma 7 initialization. Using any to bypass type strictness during build/prerender
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // Prisma 7 initialization. Using unknown as any to bypass type strictness during build/prerender
     prisma = new PrismaClient({
       datasources: {
         db: {
           url: dbUrl || 'postgresql://localhost:5432/unused'
         }
       }
-    } as any);
+    } as unknown as any); // eslint-disable-line @typescript-eslint/no-explicit-any
   }
   return prisma;
 }
@@ -41,11 +40,6 @@ app.use(cors());
 app.use((req, res, next) => {
   console.log(`[Request] ${req.method} ${req.url}`);
   next();
-});
-
-app.all('/triggers/github', (req, res) => {
-  console.log('[Trigger] github detected');
-  res.status(200).json({ ok: true });
 });
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
