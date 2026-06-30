@@ -16,8 +16,8 @@ const browserDistFolder = process.env['VERCEL']
   : join(import.meta.dirname, '../browser');
 
 const dataFolder = process.env['VERCEL']
-  ? join(process.cwd(), 'data')
-  : join(import.meta.dirname, '../../data');
+  ? join('/tmp', 'data')
+  : join(process.cwd(), 'data');
 const uploadsFolder = join(dataFolder, 'uploads');
 const dbFilePath = join(dataFolder, 'db.json');
 
@@ -43,9 +43,6 @@ const getProdUrl = () => {
   return `http://localhost:${process.env['PORT'] || 3000}`;
 };
 (globalThis as unknown as { APP_URL?: string }).APP_URL = getProdUrl();
-
-// Export for Vercel
-export default app;
 
 app.use(express.json({ limit: '1000mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1000mb' }));
@@ -255,3 +252,6 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
  * Request handler used by the Angular CLI (for dev-server and during build) or Firebase Cloud Functions.
  */
 export const reqHandler = createNodeRequestHandler(app);
+
+// Export for Vercel
+export default app;

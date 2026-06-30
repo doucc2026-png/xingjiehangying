@@ -13,19 +13,20 @@
       "use": "@vercel/node",
       "config": {
         "includeFiles": [
-          "dist/app/browser/**"
+          "dist/app/browser/**",
+          "dist/app/server/**"
         ]
       }
     }
   ],
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "src/server.ts"
+      "source": "/api/uploads/(.*)",
+      "destination": "/api/uploads/$1"
     },
     {
-      "source": "/uploads/(.*)",
-      "destination": "/api/uploads/$1"
+      "source": "/api/(.*)",
+      "destination": "src/server.ts"
     },
     {
       "source": "/(.*)",
