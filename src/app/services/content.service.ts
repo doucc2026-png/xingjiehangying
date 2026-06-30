@@ -31,8 +31,10 @@ export class ContentService {
   private getBaseUrl(): string {
     if (typeof window === 'undefined') {
       // In SSR/Prerendering, we must use absolute URLs
-      // Defaulting to localhost:3000 as the app runs on port 3000 in AI Studio
-      return 'http://localhost:3000';
+      // 1. Check for APP_URL environment variable (set in cloud platforms)
+      // 2. Default to localhost:3000 for AI Studio development
+      const envUrl = (globalThis as unknown as { APP_URL?: string }).APP_URL || 'http://localhost:3000';
+      return envUrl;
     }
     return '';
   }

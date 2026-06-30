@@ -31,6 +31,9 @@ const app = express();
 app.use(cors());
 const angularApp = new AngularNodeAppEngine();
 
+// Expose APP_URL to globalThis for SSR Absolute URLs
+(globalThis as unknown as { APP_URL?: string }).APP_URL = process.env['APP_URL'] || `http://localhost:${process.env['PORT'] || 3000}`;
+
 app.use(express.json({ limit: '1000mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1000mb' }));
 

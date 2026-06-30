@@ -123,16 +123,16 @@ export class AboutComponent implements AfterViewInit, OnDestroy {
 
     L.control.zoom({ position: 'topright' }).addTo(this.map);
 
-    // Gaode Satellite Tiles - Real Satellite Map
+    // Gaode Satellite Tiles - High Definition
     const satelliteLayer = L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}', {
-      maxZoom: 18,
+      maxZoom: 20,
       subdomains: '1234',
-      attribution: '&copy; 高德地图 (Gaode Maps)'
+      attribution: '&copy; 高德地图 Amap (Satellite)'
     });
     
-    // Gaode Road Network and Labels (Hybrid)
+    // Gaode Road Network and Labels (High Density)
     const roadLayer = L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}', {
-      maxZoom: 18,
+      maxZoom: 20,
       subdomains: '1234',
       opacity: 1
     });
