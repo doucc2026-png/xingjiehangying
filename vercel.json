@@ -2,18 +2,25 @@
   "version": 2,
   "builds": [
     {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist/app/browser"
+      }
+    },
+    {
       "src": "src/server.ts",
       "use": "@vercel/node"
     }
   ],
   "rewrites": [
     {
-      "source": "/uploads/(.*)",
-      "destination": "/uploads/$1"
-    },
-    {
       "source": "/api/(.*)",
       "destination": "src/server.ts"
+    },
+    {
+      "source": "/uploads/(.*)",
+      "destination": "/uploads/$1"
     },
     {
       "source": "/(.*)",
