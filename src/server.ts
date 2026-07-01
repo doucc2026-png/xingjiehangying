@@ -23,12 +23,8 @@ function getPrisma() {
     }
     // Prisma 7 initialization. Using unknown as any to bypass type strictness during build/prerender
     prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: dbUrl || 'postgresql://localhost:5432/unused'
-        }
-      }
-    } as unknown as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+      datasourceUrl: dbUrl || 'postgresql://localhost:5432/unused'
+    } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
   }
   return prisma;
 }
